@@ -1,0 +1,9 @@
+Package: com.shinvou.Stepper2
+Name: Stepper 2
+Depends: mobilesubstrate
+Architecture: iphoneos-arm
+Description: Stepper 2
+Author: Timm Kandziora
+Section: Tweaks
+Version: 1.0-1
+Installed-Size: 424
