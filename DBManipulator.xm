@@ -10,17 +10,17 @@
 
 @implementation DBManipulator
 
-- (id)initDBManipulator
++ (id)sharedInstance
 {
-	self = [super init];
+	static DBManipulator *sharedInstance;
 
-	if (self) {
-		_database = [[NSMutableArray alloc] init];
-		
-		return self;
-	}
+	static dispatch_once_t provider_token;
+	dispatch_once(&provider_token, ^{
+		sharedInstance = [[self alloc] init];
+		sharedInstance.database = [[NSMutableArray alloc] init];
+	});
 
-	return nil;
+	return sharedInstance;
 }
 
 - (void)runQuery:(const char *)query executable:(BOOL)executable
@@ -76,13 +76,24 @@
 	sqlite3_close(database);
 }
 
-- (NSArray *)returnDatabase
+- (BOOL)addDatabaseEntryIfNeeded
 {
 	NSString *databaseQuery = @"select * from access";
 
     [self runQuery:[databaseQuery UTF8String] executable:NO];
 
-    return _database;
+	NSArray *database = [_database copy];
+	_database = [[NSMutableArray alloc] init];
+
+	for (int i = 0; i < database.count; i++) {
+		if ([[[database objectAtIndex:i] objectAtIndex:1] isEqualToString:@"com.apple.springboard"]) {
+			return NO;
+		}
+	}
+
+    [self addSpringBoardEntryToDatabase];
+
+	return YES;
 }
 
 

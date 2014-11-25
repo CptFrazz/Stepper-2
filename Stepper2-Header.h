@@ -1,20 +1,20 @@
-#import <substrate.h>
-
+#import "sqlite3.h"
 #import "CoreMotion/CMPedometer.h"
 #import "Foundation/NSDistributedNotificationCenter.h"
-#import "sqlite3.h"
 
 @interface StepperFetcher : NSObject
-@property (nonatomic, retain) CMPedometer *pedoMeter;
 @property int timeInterval;
+@property (strong, nonatomic) CMPedometer *pedoMeter;
 + (id)sharedInstance;
 - (void)startFetchingSteps;
+- (void)restartStepperFetcher;
+- (void)midnightParty;
 @end
 
 @interface DBManipulator : NSObject
-@property (nonatomic, strong) NSMutableArray *database;
-- (id)initDBManipulator;
-- (NSArray *)returnDatabase;
+@property (strong, nonatomic) NSMutableArray *database;
++ (id)sharedInstance;
+- (BOOL)addDatabaseEntryIfNeeded;
 - (void)addSpringBoardEntryToDatabase;
 @end
 
@@ -39,4 +39,9 @@
 - (void)layoutSubviews;
 - (BOOL)mediaControlsHidden;
 - (void)setMediaControlsHidden:(BOOL)hidden forRequester:(NSString *)requester;
+@end
+
+@interface SpringBoard
+- (void)applicationDidFinishLaunching:(id)application;
+- (void)checkDatabase;
 @end

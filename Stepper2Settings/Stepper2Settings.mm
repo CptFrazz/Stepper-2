@@ -373,9 +373,9 @@
                                                                       edit:Nil];
         [bubble_color setIdentifier:@"bubble_color"];
         [bubble_color setProperty:@(YES) forKey:@"enabled"];
-        [bubble_color setValues:@[@(0), @(1), @(2), @(3), @(4), @(5), @(6), @(7), @(8), @(9), @(10), @(11), @(12), @(13)]
-                         titles:@[@"Black Color", @"Dark Gray Color", @"Light Gray Color", @"White Color", @"Gray Color", @"Red Color", @"Green Color", @"Blue Color", @"Cyan Color", @"Yellow Color", @"Magenta Color", @"Orange Color", @"Purple Color", @"Brown Color"]
-                    shortTitles:@[@"Black Color", @"Dark Gray Color", @"Light Gray Color", @"White Color", @"Gray Color", @"Red Color", @"Green Color", @"Blue Color", @"Cyan Color", @"Yellow Color", @"Magenta Color", @"Orange Color", @"Purple Color", @"Brown Color"]];
+        [bubble_color setValues:@[@(0), @(1), @(2), @(3), @(4), @(5), @(6), @(7), @(8), @(9), @(10), @(11), @(12), @(13), @(14)]
+                         titles:@[@"Black Color", @"Dark Gray Color", @"Light Gray Color", @"White Color", @"Gray Color", @"Red Color", @"Green Color", @"Blue Color", @"Cyan Color", @"Yellow Color", @"Magenta Color", @"Orange Color", @"Purple Color", @"Brown Color", @"Clear Color"]
+                    shortTitles:@[@"Black Color", @"Dark Gray Color", @"Light Gray Color", @"White Color", @"Gray Color", @"Red Color", @"Green Color", @"Blue Color", @"Cyan Color", @"Yellow Color", @"Magenta Color", @"Orange Color", @"Purple Color", @"Brown Color", @"Clear Color"]];
 
         _specifiers = [NSArray arrayWithObjects:firstGroup, x_coordinate, secondGroup, y_coordinate, thirdGroup, text_size, fourthGroup, bubble_radius, fifthGroup, text_color, bubble_color, nil];
     }

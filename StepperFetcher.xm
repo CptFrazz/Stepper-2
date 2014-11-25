@@ -25,15 +25,27 @@
 
 - (void)startFetchingSteps
 {
-    [_pedoMeter stopPedometerUpdates];
-
 	[_pedoMeter startPedometerUpdatesFromDate:[self getNSDateForSpecificTimePeriod] withHandler:^(CMPedometerData *pedometerData, NSError *error) {
 		if (!error) {
 			[[NSDistributedNotificationCenter defaultCenter] postNotificationName:@"StepperFetcherSuccess" object:nil userInfo:@{ @"NumberOfSteps" : [pedometerData numberOfSteps], @"TimeInterval" : @(_timeInterval) }];
-        } else {
-            [[NSDistributedNotificationCenter defaultCenter] postNotificationName:@"StepperFetcherError" object:nil userInfo:@{ @"Error" : error }];
         }
     }];
+}
+
+- (void)restartStepperFetcher
+{
+	[_pedoMeter stopPedometerUpdates];
+	_pedoMeter = [[CMPedometer alloc] init];
+	[self startFetchingSteps];
+}
+
+- (void)midnightParty
+{
+	if (_timeInterval == 0) {
+		[[NSDistributedNotificationCenter defaultCenter] postNotificationName:@"StepperFetcherSuccess" object:nil userInfo:@{ @"NumberOfSteps" : @(0), @"TimeInterval" : @(0) }];
+	}
+
+	[self restartStepperFetcher];
 }
 
 - (NSDate *)getNSDateForSpecificTimePeriod

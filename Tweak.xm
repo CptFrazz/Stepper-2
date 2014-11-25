@@ -77,8 +77,11 @@ static UIColor* GetUIColorForColorNumber(int colorNumber)
 		case 12:
 			return [UIColor purpleColor];
 			break;
-		default:
+		case 13:
 			return [UIColor brownColor];
+			break;
+		default:
+			return [UIColor clearColor];
 			break;
 	}
 }
@@ -108,26 +111,20 @@ static void SetStatusBarText()
 	}
 }
 
-static BOOL HasAccess()
+static void UpdateTheInterface()
 {
-	DBManipulator *dbManipulator = [[DBManipulator alloc] initDBManipulator];
-
-	NSArray *databaseData = [dbManipulator returnDatabase];
-
-	for (int i = 0; i < databaseData.count; i++) {
-		if ([[[databaseData objectAtIndex:i] objectAtIndex:1] isEqualToString:@"com.apple.springboard"]) {
-			return YES;
-		}
-	}
-
-	return NO;
+	[lockScreenView setCustomSlideToUnlockText:[NSString stringWithFormat:@"%d steps", stepCount] animated:YES];
+	SetStatusBarText();
 }
 
-static void GiveTCCAccess()
+static void GoalAlertShown(BOOL babybool)
 {
-	DBManipulator *dbManipulator = [[DBManipulator alloc] initDBManipulator];
+	goalAlertShown = babybool;
 
-	[dbManipulator addSpringBoardEntryToDatabase];
+	NSMutableDictionary *settings = [[NSMutableDictionary alloc] init];
+	[settings addEntriesFromDictionary:[NSDictionary dictionaryWithContentsOfFile:settingsPath]];
+	[settings setObject:@(babybool) forKey:@"goalAlertShown"];
+	[settings writeToFile:settingsPath atomically:YES];
 }
 
 static void ReloadSettings()
@@ -227,17 +224,15 @@ static void ReloadSettings()
 
 	NSString *timeItemTimeString = MSHookIvar<NSString *>(self, "_timeItemTimeString");
 
-	if ([timeItemTimeString containsString:customReminderTime]) {
-		if (!reminderAlertShown) {
-			reminderAlertShown = YES;
+	if ([timeItemTimeString containsString:customReminderTime] && !reminderAlertShown) {
+		reminderAlertShown = YES;
 
-			UIAlertView *reminderAlert = [[UIAlertView alloc ] initWithTitle:@"Stepper 2"
-																	message:[NSString stringWithFormat:@"You have done %d of %d steps.", stepCount, stepGoal]
-																	delegate:nil
-																	cancelButtonTitle:@"Ok ..."
-																	otherButtonTitles:nil];
-			[reminderAlert show];
-		}
+		UIAlertView *reminderAlert = [[UIAlertView alloc ] initWithTitle:@"Stepper 2"
+																 message:[NSString stringWithFormat:@"You took %d steps until now, your goal is %d steps.", stepCount, stepGoal]
+																delegate:nil
+													   cancelButtonTitle:@"Ok"
+													   otherButtonTitles:nil];
+		[reminderAlert show];
 	}
 }
 
@@ -307,8 +302,6 @@ static void ReloadSettings()
 		}
 	}
 
-	SetStatusBarText();
-
 	%orig;
 }
 
@@ -331,7 +324,7 @@ static void ReloadSettings()
 	%orig;
 
 	if (!unlockedAfterReboot) {
-		[self performSelector:@selector(startStepperAfterBoot) withObject:nil afterDelay:3.0];
+		[self performSelector:@selector(startStepperAfterBoot) withObject:nil afterDelay:1.0];
 	}
 }
 
@@ -339,73 +332,62 @@ static void ReloadSettings()
 {
 	unlockedAfterReboot = YES;
 
-	[[StepperFetcher sharedInstance] startFetchingSteps];
+	[[StepperFetcher sharedInstance] restartStepperFetcher];
+}
+
+%end
+
+%hook SpringBoard
+
+- (void)applicationDidFinishLaunching:(id)application
+{
+	%orig;
+
+	[NSTimer scheduledTimerWithTimeInterval:60.0 target:self selector:@selector(checkDatabase) userInfo:nil repeats:YES];
+}
+
+%new - (void)checkDatabase
+{
+	if ([[DBManipulator sharedInstance] addDatabaseEntryIfNeeded]) {
+		[[StepperFetcher sharedInstance] restartStepperFetcher];
+	}
 }
 
 %end
 
 %ctor {
 	@autoreleasepool {
-		if (!HasAccess()) {
-			GiveTCCAccess();
-		}
+		[[DBManipulator sharedInstance] addDatabaseEntryIfNeeded];
 
 		[[NSDistributedNotificationCenter defaultCenter] addObserverForName:@"StepperFetcherSuccess" object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *notification) {
 			stepCount = [[[notification userInfo] objectForKey:@"NumberOfSteps"] intValue];
-			[lockScreenView setCustomSlideToUnlockText:[NSString stringWithFormat:@"%d steps", stepCount] animated:YES];
-			SetStatusBarText();
 
-			if ([[[notification userInfo] objectForKey:@"TimeInterval"] intValue] == 0 && goalEnabled) {
-				if (stepCount >= stepGoal) {
-					if (!goalAlertShown) {
-						goalAlertShown = YES;
+			UpdateTheInterface();
 
-						NSMutableDictionary *settings = [[NSMutableDictionary alloc] init];
-						[settings addEntriesFromDictionary:[NSDictionary dictionaryWithContentsOfFile:settingsPath]];
-						[settings setObject:@(YES) forKey:@"goalAlertShown"];
-						[settings writeToFile:settingsPath atomically:YES];
+			if ([[[notification userInfo] objectForKey:@"TimeInterval"] intValue] == 0 && goalEnabled && stepCount >= stepGoal && !goalAlertShown) {
+				GoalAlertShown(YES);
 
-						UIAlertView *goalReachedAlert = [[UIAlertView alloc ] initWithTitle:@"Stepper 2"
-																					message:[NSString stringWithFormat:@"You reached your daily goal of %d steps, but don't think about stopping!", stepGoal]
-																					delegate:nil
-																					cancelButtonTitle:@"Ok ..."
-																					otherButtonTitles:nil];
-						[goalReachedAlert show];
-					}
-				}
+				UIAlertView *goalReachedAlert = [[UIAlertView alloc ] initWithTitle:@"Stepper 2"
+																			message:[NSString stringWithFormat:@"You reached your daily goal of %d steps, but don't think about stopping!", stepGoal]
+																		   delegate:nil
+																  cancelButtonTitle:@"Ok"
+																  otherButtonTitles:nil];
+				[goalReachedAlert show];
 			}
 		}];
 
-		[[NSDistributedNotificationCenter defaultCenter] addObserverForName:@"StepperFetcherError" object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *notification) {
-			NSLog(@"[Stepper 2] Received following error from StepperFetcher: %@", [[notification userInfo] objectForKey:@"Error"]);
-		}];
-
 		[[NSDistributedNotificationCenter defaultCenter] addObserverForName:@"Stepper2TimeIntervalChanged" object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *notification) {
-			[[StepperFetcher sharedInstance] startFetchingSteps];
+			[[StepperFetcher sharedInstance] restartStepperFetcher];
 		}];
 
 		[[NSNotificationCenter defaultCenter] addObserverForName:NSCalendarDayChangedNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *notification) {
-			goalAlertShown = NO;
+			GoalAlertShown(NO);
 
-			NSMutableDictionary *settings = [[NSMutableDictionary alloc] init];
-			[settings addEntriesFromDictionary:[NSDictionary dictionaryWithContentsOfFile:settingsPath]];
-			[settings setObject:@(NO) forKey:@"goalAlertShown"];
-			[settings writeToFile:settingsPath atomically:YES];
-
-			stepCount = 0;
-			[lockScreenView setCustomSlideToUnlockText:[NSString stringWithFormat:@"%d steps", stepCount] animated:YES];
-			SetStatusBarText();
-
-			[[StepperFetcher sharedInstance] startFetchingSteps];
+			[[StepperFetcher sharedInstance] midnightParty];
 		}];
 
-		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(),
-										NULL,
-										(CFNotificationCallback)ReloadSettings,
-										CFSTR("com.shinvou.stepper2/reloadSettings"),
-										NULL,
-										CFNotificationSuspensionBehaviorCoalesce);
 		ReloadSettings();
+		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)ReloadSettings, CFSTR("com.shinvou.stepper2/reloadSettings"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 
 		[[StepperFetcher sharedInstance] startFetchingSteps];
 	}
