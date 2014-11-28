@@ -5,5 +5,5 @@ Architecture: iphoneos-arm
 Description: Stepper 2
 Author: Timm Kandziora
 Section: Tweaks
-Version: 1.0-2
-Installed-Size: 424
+Version: 1.0-3
+Installed-Size: 352

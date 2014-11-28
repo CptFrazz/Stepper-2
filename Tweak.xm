@@ -12,6 +12,7 @@
 
 static BOOL showLabel = YES;
 static BOOL showSlider = YES;
+static BOOL updateSliderAnimated = YES;
 static BOOL showStatusBar = YES;
 static BOOL goalEnabled = YES;
 static BOOL goalAlertShown = NO;
@@ -113,7 +114,7 @@ static void SetStatusBarText()
 
 static void UpdateTheInterface()
 {
-	[lockScreenView setCustomSlideToUnlockText:[NSString stringWithFormat:@"%d steps", stepCount] animated:YES];
+	[lockScreenView setCustomSlideToUnlockText:[NSString stringWithFormat:@"%d steps", stepCount] animated:updateSliderAnimated];
 	SetStatusBarText();
 }
 
@@ -139,6 +140,10 @@ static void ReloadSettings()
 
 		if ([settings objectForKey:@"showSlider"]) {
 			showSlider = [[settings objectForKey:@"showSlider"] boolValue];
+		}
+
+		if ([settings objectForKey:@"updateSliderAnimated"]) {
+			updateSliderAnimated = [[settings objectForKey:@"updateSliderAnimated"] boolValue];
 		}
 
 		if ([settings objectForKey:@"showStatusBar"]) {
@@ -324,7 +329,7 @@ static void ReloadSettings()
 	%orig;
 
 	if (!unlockedAfterReboot) {
-		[self performSelector:@selector(startStepperAfterBoot) withObject:nil afterDelay:1.0];
+		[self performSelector:@selector(startStepperAfterBoot) withObject:nil afterDelay:1.5];
 	}
 }
 

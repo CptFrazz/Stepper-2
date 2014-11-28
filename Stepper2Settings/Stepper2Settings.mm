@@ -2,6 +2,7 @@
 #import <Foundation/NSDistributedNotificationCenter.h>
 
 #define settingsPath @"/var/mobile/Library/Preferences/com.shinvou.stepper2.plist"
+#define UIColorRGB(r, g, b) [UIColor colorWithRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0]
 
 @interface Stepper2Banner : PSTableCell
 
@@ -16,8 +17,15 @@
     self = [super initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"stepper2BannerCell" specifier:specifier];
 
     if (self) {
-        _backgroundImage = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/Stepper2Settings.bundle/bannerImage.png"]];
-        [self addSubview:_backgroundImage];
+        self.backgroundColor = UIColorRGB(74, 74, 74);
+
+        UILabel *label =[[UILabel alloc] initWithFrame:CGRectMake(0, 0, [[UIScreen mainScreen] bounds].size.width, 206)];
+        label.font = [UIFont fontWithName:@"Helvetica-Light" size:60];
+        label.textAlignment = NSTextAlignmentCenter;
+        label.textColor = [UIColor whiteColor];
+        label.text = @"#pantarhei";
+
+        [self addSubview:label];
     }
 
     return self;
@@ -500,7 +508,7 @@
                                                                cell:PSStaticTextCell
                                                                edit:Nil];
         [banner setProperty:[Stepper2Banner class] forKey:@"cellClass"];
-        [banner setProperty:@"205" forKey:@"height"];
+        [banner setProperty:@"206" forKey:@"height"];
 
         PSSpecifier *firstGroup = [PSSpecifier groupSpecifierWithName:@"Steps on lockscreen"];
 
@@ -523,6 +531,16 @@
                                                                       edit:Nil];
         [slidetounlock setIdentifier:@"slidetounlock"];
         [slidetounlock setProperty:@(YES) forKey:@"enabled"];
+
+        PSSpecifier *updateSliderAnimated = [PSSpecifier preferenceSpecifierNamed:@"Update 'slider' animated"
+                                                                           target:self
+                                                                              set:@selector(setValue:forSpecifier:)
+                                                                              get:@selector(getValueForSpecifier:)
+                                                                           detail:Nil
+                                                                             cell:PSSwitchCell
+                                                                             edit:Nil];
+        [updateSliderAnimated setIdentifier:@"updateSliderAnimated"];
+        [updateSliderAnimated setProperty:@(YES) forKey:@"enabled"];
 
         PSSpecifier *secondGroup = [PSSpecifier groupSpecifierWithName:@"Steps on statusbar"];
 
@@ -614,7 +632,7 @@
         [github setProperty:@(YES) forKey:@"enabled"];
         [github setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/Stepper2Settings.bundle/github.png"] forKey:@"iconImage"];
 
-        _specifiers = [NSArray arrayWithObjects:banner, firstGroup, lockscreen_enabled, slidetounlock, secondGroup, statusbar_enabled, separator, thirdGroup, customize_notifications, customize_appearance, fourthGroup, time_interval, fifthGroup, twitter, github, nil];
+        _specifiers = [NSArray arrayWithObjects:banner, firstGroup, lockscreen_enabled, slidetounlock, updateSliderAnimated, secondGroup, statusbar_enabled, separator, thirdGroup, customize_notifications, customize_appearance, fourthGroup, time_interval, fifthGroup, twitter, github, nil];
     }
 
     return _specifiers;
@@ -638,6 +656,16 @@
         if (settings) {
             if ([settings objectForKey:@"showSlider"]) {
                 return [settings objectForKey:@"showSlider"];
+            } else {
+                return [NSNumber numberWithBool:YES];
+            }
+        } else {
+            return [NSNumber numberWithBool:YES];
+        }
+    } else if ([specifier.identifier isEqualToString:@"updateSliderAnimated"]) {
+        if (settings) {
+            if ([settings objectForKey:@"updateSliderAnimated"]) {
+                return [settings objectForKey:@"updateSliderAnimated"];
             } else {
                 return [NSNumber numberWithBool:YES];
             }
@@ -689,6 +717,9 @@
         [settings writeToFile:settingsPath atomically:YES];
     } else if ([specifier.identifier isEqualToString:@"slidetounlock"]) {
         [settings setObject:value forKey:@"showSlider"];
+        [settings writeToFile:settingsPath atomically:YES];
+    } else if ([specifier.identifier isEqualToString:@"updateSliderAnimated"]) {
+        [settings setObject:value forKey:@"updateSliderAnimated"];
         [settings writeToFile:settingsPath atomically:YES];
     } else if ([specifier.identifier isEqualToString:@"statusbar_enabled"]) {
         [settings setObject:value forKey:@"showStatusBar"];
